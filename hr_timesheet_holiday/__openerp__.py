@@ -60,7 +60,7 @@ Contributors
      'wizard/holidays_import_view.xml',
      'company_view.xml',
  ],
- 'installable': False,
+ 'installable': True,
  'auto_install': False,
- 'application': False,
+ 'application': True,
  }

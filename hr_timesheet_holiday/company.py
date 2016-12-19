@@ -18,15 +18,13 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
-from openerp.osv import orm, fields
+from openerp import models, fields
 
-
-class ResCompany(orm.Model):
+class ResCompany(models.Model):
     _inherit = 'res.company'
-    _columns = {
-        'timesheet_hours_per_day': fields.float(
-            'Timesheet Hours Per Day', digits=(2, 2))
-    }
+
+    timesheet_hours_per_day = fields.Float(
+        'Timesheet Hours Per Day', digits=(2, 2))
 
     _defaults = {
         'timesheet_hours_per_day': 8.0

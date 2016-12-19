@@ -18,14 +18,13 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
-from openerp.osv import orm, fields
+from openerp import models, fields
 
-
-class HrHolidaysStatus(orm.Model):
+class HrHolidaysStatus(models.Model):
 
     """Add analytic account to holiday status"""
     _inherit = 'hr.holidays.status'
-    _columns = {
-        'analytic_account_id': fields.many2one(
-            'account.analytic.account', 'Analytic Account'),
-    }
+
+    analytic_account_id = fields.Many2one('account.analytic.account',
+        'Analytic Account')
+
