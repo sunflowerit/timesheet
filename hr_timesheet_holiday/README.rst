@@ -22,24 +22,15 @@ Limitations:
 
 - Consider that the work days are Monday to Friday
 
-Contributors
-------------
-
-* Tom Blauwendraat <tom@sunflowerweb.nl>
-* Terrence Nzaywa <terrence@sunflowerweb.nl>
-
-Installation
-============
-
-Just install.
-
 Configuration
 =============
 
 To configure this module, you need to:
 
-#. Configure the amount of hours per workday of your company.
-#. Configure Analytic accounts for each Leave Type.
+#. Find your company in Settings - Companies and configure the amount of hours
+   per workday under Configuration - Timesheets - Timesheet Hours Per Day.
+#. For each Leave Type under Human Resources - Leave Types, select or create
+   an Analytic Account.
 
 Usage
 =====
@@ -78,8 +69,9 @@ Images
 Contributors
 ------------
 
-* Therp BV
-* Sunflower IT
+* Tom Blauwendraat <tom@sunflowerweb.nl>
+* Terrence Nzaywa <terrence@sunflowerweb.nl>
+* Holger Brunn <hbrunn@therp.nl>
 
 Maintainer
 ----------
