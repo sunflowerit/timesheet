@@ -5,9 +5,9 @@
 from openerp import models, fields, api
 
 class AnalyticAccount(models.Model):
+    """Add 'is leave account' flag to Analytic Account"""
     _inherit = 'account.analytic.account'
 
-    # flag that specifies if this account is used for leaves
     is_leave_account = fields.Boolean('Leaves',
         help="Check this field if this account manages leaves",
         default=False)
