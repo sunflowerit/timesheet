@@ -7,12 +7,12 @@ from openerp.exceptions import Warning as UserError
 
 
 class HrHolidays(models.Model):
-    """Update analytic account on status change of Leave Request"""
+    """Update analytic lines on status change of Leave Request"""
     _inherit = 'hr.holidays'
 
-    # Add hr.analytic.timesheet to a leave request
-    holiday_analytic_timesheet_id = fields.Many2one(
-        comodel_name='hr.analytic.timesheet', string="Analytic Timesheet")
+    # Timesheet entry linked to this leave request
+    timesheet_ids = fields.One2many('hr.analytic.timesheet', 'leave_id',
+        'Timesheet entries')
 
     @api.multi
     def holidays_validate(self):
@@ -41,7 +41,8 @@ class HrHolidays(models.Model):
 
                 # Add analytic line for the leave hours
                 hours = abs(leave.number_of_days) * hours_per_day
-                timesheet = self.env['hr.analytic.timesheet'].create({
+                leave.sudo().timesheet_ids.unlink()
+                leave.sudo().write({'timesheet_ids': [(0, False, {
                     'name': leave.name or leave.holiday_status_id.name,
                     'date': leave.date_from,
                     'unit_amount': hours,
@@ -49,8 +50,7 @@ class HrHolidays(models.Model):
                     'account_id': account.id,
                     'user_id': user.id,
                     'journal_id': leave.employee_id.journal_id.id
-                })
-                leave.write({'holiday_analytic_timesheet_id': timesheet.id})
+                })]})
 
         return res
 
@@ -59,6 +59,6 @@ class HrHolidays(models.Model):
         res = super(HrHolidays, self).holidays_refuse()
 
         for leave in self:
-            leave.holiday_analytic_timesheet_id.unlink()
+            leave.sudo().timesheet_ids.unlink()
 
         return res

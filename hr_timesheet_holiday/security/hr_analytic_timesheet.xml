@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<openerp>
+    <data>
+
+        <!-- restrict create/change/unlink to non-holiday timesheet lines -->
+        <record id="hr_analytic_timesheet_holiday_readonly" model="ir.rule">
+            <field name="name">Timesheet entries read only for holidays</field>
+            <field name="model_id" ref="model_hr_analytic_timesheet"/>
+            <field name="domain_force">[('leave_id', '=', False)]</field>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+            <field name="global" eval="True"/>
+        </record>
+
+    </data>
+</openerp>

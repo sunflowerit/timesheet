@@ -2,19 +2,18 @@
    :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
    :alt: License: AGPL-3
 
-==================================
-Link holidays to analytic accounts
-==================================
+===============================
+Link holidays to analytic lines
+===============================
 
-This module adds a relation between the Leave Types and the Analytic Accounts.
+This module adds a relation between Leave Type and Analytic Account.
 When a Leave Request is granted, the granted days are converted to hours and
-added to the Analytic Account for that Leave Type.
+added as a line to the Analytic Account.
 
-When the leave is revoked, the hours are also removed from the analytic
-account.
+When the leave is revoked, the analytic lines are removed again.
 
-The hours added to the Analytic Account are read-only, so you cannot edit them
-directly, just by granting or revoking leave requests.
+The analytic lines are read-only, so you cannot edit them directly, just by
+granting or revoking leave requests.
 
 The hours to input per day is configurable at company level.
 
@@ -38,9 +37,9 @@ Usage
 To use this module, you need to:
 
 #. Approve a Leave Request
-#. See the hours added to the Analytic Accounts
+#. See the hours added to Timesheet Activities
 #. Revoke a Leave Request
-#. See the hours removed from the Analytic Accounts
+#. See the hours removed from Timesheet Activities
 
 Known issues / Roadmap
 ======================
