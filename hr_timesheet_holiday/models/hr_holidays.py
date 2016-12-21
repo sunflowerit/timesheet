@@ -10,6 +10,10 @@ class HrHolidays(models.Model):
     """Update analytic account on status change of Leave Request"""
     _inherit = 'hr.holidays'
 
+    # Add hr.analytic.timesheet to a leave request
+    holiday_analytic_timesheet_id = fields.Many2one(
+        comodel_name='hr.analytic.timesheet', string="Analytic Timesheet")
+
     @api.multi
     def holidays_validate(self):
         res = super(HrHolidays, self).holidays_validate()
@@ -17,6 +21,7 @@ class HrHolidays(models.Model):
         # Postprocess Leave Types that have an analytic account configured
         for leave in self:
             account = leave.holiday_status_id.analytic_account_id
+
             if account:
 
                 # Assert hours per working day
@@ -36,7 +41,7 @@ class HrHolidays(models.Model):
 
                 # Add analytic line for the leave hours
                 hours = abs(leave.number_of_days) * hours_per_day
-                lines = self.env['hr.analytic.timesheet'].create({
+                timesheet = self.env['hr.analytic.timesheet'].create({
                     'name': leave.name or leave.holiday_status_id.name,
                     'date': leave.date_from,
                     'unit_amount': hours,
@@ -45,5 +50,15 @@ class HrHolidays(models.Model):
                     'user_id': user.id,
                     'journal_id': leave.employee_id.journal_id.id
                 })
+                leave.write({'holiday_analytic_timesheet_id': timesheet.id})
+
+        return res
+
+    @api.multi
+    def holidays_refuse(self):
+        res = super(HrHolidays, self).holidays_refuse()
+
+        for leave in self:
+            leave.holiday_analytic_timesheet_id.unlink()
 
         return res
