@@ -16,7 +16,8 @@ class AnalyticLine(models.Model):
         for line in self:
             if self.env.context.get('force_write', False):
                 continue
-            if line._timesheet_ids.leave_id:
+            if self.account_id.is_leave_account \
+                    and line._timesheet_ids.leave_id:
                 raise UserError(_("This line is protected against editing"
                     " because it was created automatically by a leave request."
                     " Please edit the leave request instead."))
@@ -27,7 +28,8 @@ class AnalyticLine(models.Model):
         for line in self:
             if self.env.context.get('force_unlink', False):
                 continue
-            if line._timesheet_ids.leave_id:
+            if self.account_id.is_leave_account \
+                    and line._timesheet_ids.leave_id:
                 raise UserError(_("This line is protected against removal"
                     " because it was created automatically by a leave request."
                     " Please edit the leave request instead."))
