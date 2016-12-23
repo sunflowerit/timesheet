@@ -18,7 +18,6 @@
     'data': [
         'views/hr_holidays_view.xml',
         'views/company_view.xml',
-        'security/hr_analytic_timesheet.xml'
     ],
     'installable': True
 }
