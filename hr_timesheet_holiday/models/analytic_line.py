@@ -13,24 +13,22 @@ class AnalyticLine(models.Model):
 
     @api.multi
     def write(self, vals):
-        for line in self:
-            if self.env.context.get('force_write', False):
-                continue
-            if self.account_id.is_leave_account \
-                    and line._timesheet_ids.leave_id:
-                raise UserError(_("This line is protected against editing"
-                    " because it was created automatically by a leave request."
-                    " Please edit the leave request instead."))
+        if not self.env.context.get('force_write', False):
+            for line in self:
+                if line.account_id.is_leave_account \
+                        and line._timesheet_ids.leave_id:
+                    raise UserError(_("This line is protected against editing"
+                        " because it was created automatically by a leave request."
+                        " Please edit the leave request instead."))
         return super(AnalyticLine, self).write(vals)
 
     @api.multi
     def unlink(self):
-        for line in self:
-            if self.env.context.get('force_unlink', False):
-                continue
-            if self.account_id.is_leave_account \
-                    and line._timesheet_ids.leave_id:
-                raise UserError(_("This line is protected against removal"
-                    " because it was created automatically by a leave request."
-                    " Please edit the leave request instead."))
+        if not self.env.context.get('force_unlink', False):
+            for line in self:
+                if line.account_id.is_leave_account \
+                        and line._timesheet_ids.leave_id:
+                    raise UserError(_("This line is protected against removal"
+                        " because it was created automatically by a leave request."
+                        " Please edit the leave request instead."))
         return super(AnalyticLine, self).unlink()
