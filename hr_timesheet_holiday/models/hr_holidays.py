@@ -30,23 +30,30 @@ class HrHolidays(models.Model):
             'journal_id': self.employee_id.journal_id.id
         })]})
 
+    @api.model
+    def _get_hours_per_day(self, company, employee):
+        """Can be overridden to consider employee details also"""
+        hours_per_day = company.timesheet_hours_per_day
+        if not hours_per_day:
+            raise UserError(
+                _("No hours per day defined for Company '%s'") %
+                (company.name,))
+        return hours_per_day
+
     @api.multi
     def holidays_validate(self):
+        """On grant of leave, add timesheet lines"""
         res = super(HrHolidays, self).holidays_validate()
 
         # Postprocess Leave Types that have an analytic account configured
         for leave in self:
             account = leave.holiday_status_id.analytic_account_id
-
             if account:
 
                 # Assert hours per working day
-                company = leave.employee_id.company_id
-                hours_per_day = company.timesheet_hours_per_day
-                if not hours_per_day:
-                    raise UserError(
-                        _("No hours per day defined for Company '%s'") %
-                        (company.name,))
+                employee = leave.employee_id
+                company = employee.company_id
+                hours_per_day = self._get_hours_per_day(company, employee)
 
                 # Assert user connected to employee
                 user = leave.employee_id.user_id
@@ -78,6 +85,7 @@ class HrHolidays(models.Model):
 
     @api.multi
     def holidays_refuse(self):
+        """On refusal of leave, delete timesheet lines"""
         res = super(HrHolidays, self).holidays_refuse()
         self.mapped('timesheet_ids').unlink()
         return res
