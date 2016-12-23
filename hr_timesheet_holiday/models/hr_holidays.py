@@ -2,6 +2,8 @@
 # Copyright 2016 Sunflower IT <http://sunflowerweb.nl>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
+from datetime import datetime, timedelta
+
 from openerp import models, fields, api, _
 from openerp.exceptions import Warning as UserError
 
@@ -13,6 +15,20 @@ class HrHolidays(models.Model):
     # Timesheet entry linked to this leave request
     timesheet_ids = fields.One2many('hr.analytic.timesheet', 'leave_id',
         'Timesheet entries')
+
+    @api.multi
+    def add_timesheet_line(self, description, date, hours, account_id, user_id):
+        """Add a timesheet line for this leave"""
+        self.ensure_one()
+        self.sudo().write({'timesheet_ids': [(0, False, {
+            'name': description,
+            'date': date,
+            'unit_amount': hours,
+            'company_id': self.employee_id.company_id.id,
+            'account_id': account_id,
+            'user_id': user_id,
+            'journal_id': self.employee_id.journal_id.id
+        })]})
 
     @api.multi
     def holidays_validate(self):
@@ -39,26 +55,29 @@ class HrHolidays(models.Model):
                         _("No user defined for Employee '%s'") %
                         (leave.employee_id.name,))
 
-                # Add analytic line for the leave hours
-                hours = abs(leave.number_of_days) * hours_per_day
-                leave.sudo().timesheet_ids.unlink()
-                leave.sudo().write({'timesheet_ids': [(0, False, {
-                    'name': leave.name or leave.holiday_status_id.name,
-                    'date': leave.date_from,
-                    'unit_amount': hours,
-                    'company_id': company.id,
-                    'account_id': account.id,
-                    'user_id': user.id,
-                    'journal_id': leave.employee_id.journal_id.id
-                })]})
+                # Add analytic lines for these leave hours
+                leave.sudo().timesheet_ids.unlink()  # to be sure
+                dt_from = fields.Datetime.from_string(leave.date_from)
+                for day in range(abs(int(leave.number_of_days))):
+                    dt_current = dt_from + timedelta(days=day)
+
+                    # skip the non work days
+                    day_of_the_week = dt_current.isoweekday()
+                    if day_of_the_week in (6, 7):
+                        continue
+
+                    leave.add_timesheet_line(
+                        description=leave.name or leave.holiday_status_id.name,
+                        date=dt_current,
+                        hours=hours_per_day,
+                        account_id=account.id,
+                        user_id=user.id
+                    )
 
         return res
 
     @api.multi
     def holidays_refuse(self):
         res = super(HrHolidays, self).holidays_refuse()
-
-        for leave in self:
-            leave.sudo().timesheet_ids.unlink()
-
+        self.sudo().mapped('timesheet_ids').unlink()
         return res
