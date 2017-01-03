@@ -5,7 +5,7 @@
 import time
 
 from openerp.tests.common import TransactionCase
-from openerp.exceptions import Warning as UserError
+from openerp.exceptions import ValidationError
 
 
 class TimesheetHolidayTest(TransactionCase):
@@ -51,7 +51,7 @@ class TimesheetHolidayTest(TransactionCase):
         self.assertEqual(hours_after - hours_before, 35.0)
 
         # Test editing of lines forbidden
-        self.assertRaises(UserError, account.line_ids[0].write, {
+        self.assertRaises(ValidationError, account.line_ids[0].write, {
             'unit_amount': 5.0
         })
 
@@ -66,12 +66,3 @@ class TimesheetHolidayTest(TransactionCase):
         leave.signal_workflow('refuse')
         hours_final = sum(account.line_ids.mapped('unit_amount'))
         self.assertEqual(hours_final, hours_before)
-
-
-
-
-
-
-
-
-
