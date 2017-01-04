@@ -21,7 +21,7 @@ class HrHolidays(models.Model):
 
     @api.multi
     def add_timesheet_line(self, description, date, hours, account_id,
-            user_id):
+                           user_id):
         """Add a timesheet line for this leave"""
         self.ensure_one()
         self.sudo(user_id).write({'timesheet_ids': [(0, False, {
