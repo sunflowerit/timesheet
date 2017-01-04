@@ -47,6 +47,7 @@ Known issues / Roadmap
 * Hours per workday should be configurable per employee, not only by company.
   To make this easier, the function `_get_hours_per_day` was made which can be
   overridden by child modules.
+* We should probably start using resource calendars.
 * hr_timesheet_sheet dependency can be changed to hr_timesheet, now only
   included because hr_timesheet_sheet adds the Timesheet configurations menu
   in Company view.

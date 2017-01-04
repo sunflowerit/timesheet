@@ -9,5 +9,7 @@ class HrHolidaysStatus(models.Model):
     """Add analytic account to holiday status"""
     _inherit = 'hr.holidays.status'
 
-    analytic_account_id = fields.Many2one('account.analytic.account',
-            'Analytic Account')
+    analytic_account_id = fields.Many2one(
+        'account.analytic.account',
+        'Analytic Account'
+    )

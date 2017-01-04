@@ -13,8 +13,11 @@ class HrHolidays(models.Model):
     _inherit = 'hr.holidays'
 
     # Timesheet entry linked to this leave request
-    timesheet_ids = fields.One2many('hr.analytic.timesheet', 'leave_id',
-            'Timesheet entries')
+    timesheet_ids = fields.One2many(
+        'hr.analytic.timesheet',
+        'leave_id',
+        'Timesheet entries'
+    )
 
     @api.multi
     def add_timesheet_line(self, description, date, hours, account_id,
@@ -89,6 +92,6 @@ class HrHolidays(models.Model):
         """On refusal of leave, delete timesheet lines"""
         res = super(HrHolidays, self).holidays_refuse()
         self.mapped('timesheet_ids') \
-                .with_context(force_write=True) \
-                .unlink()
+            .with_context(force_write=True) \
+            .unlink()
         return res
