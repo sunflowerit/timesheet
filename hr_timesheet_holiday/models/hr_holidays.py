@@ -52,38 +52,41 @@ class HrHolidays(models.Model):
         # Postprocess Leave Types that have an analytic account configured
         for leave in self:
             account = leave.holiday_status_id.analytic_account_id
-            if account:
+            if not account or leave.type != 'remove':
+                # we only work on leaves (type=remove, type=add is allocation)
+                # which have an account set
+                continue
 
-                # Assert hours per working day
-                employee = leave.employee_id
-                company = employee.company_id
-                hours_per_day = self._get_hours_per_day(company, employee)
+            # Assert hours per working day
+            employee = leave.employee_id
+            company = employee.company_id
+            hours_per_day = self._get_hours_per_day(company, employee)
 
-                # Assert user connected to employee
-                user = leave.employee_id.user_id
-                if not user:
-                    raise UserError(
-                        _("No user defined for Employee '%s'") %
-                        (leave.employee_id.name,))
+            # Assert user connected to employee
+            user = leave.employee_id.user_id
+            if not user:
+                raise UserError(
+                    _("No user defined for Employee '%s'") %
+                    (leave.employee_id.name,))
 
-                # Add analytic lines for these leave hours
-                leave.timesheet_ids.sudo(user.id).unlink()  # to be sure
-                dt_from = fields.Datetime.from_string(leave.date_from)
-                for day in range(abs(int(leave.number_of_days))):
-                    dt_current = dt_from + timedelta(days=day)
+            # Add analytic lines for these leave hours
+            leave.timesheet_ids.sudo(user.id).unlink()  # to be sure
+            dt_from = fields.Datetime.from_string(leave.date_from)
+            for day in range(abs(int(leave.number_of_days))):
+                dt_current = dt_from + timedelta(days=day)
 
-                    # skip the non work days
-                    day_of_the_week = dt_current.isoweekday()
-                    if day_of_the_week in (6, 7):
-                        continue
+                # skip the non work days
+                day_of_the_week = dt_current.isoweekday()
+                if day_of_the_week in (6, 7):
+                    continue
 
-                    leave.add_timesheet_line(
-                        description=leave.name or leave.holiday_status_id.name,
-                        date=dt_current,
-                        hours=hours_per_day,
-                        account_id=account.id,
-                        user_id=user.id
-                    )
+                leave.add_timesheet_line(
+                    description=leave.name or leave.holiday_status_id.name,
+                    date=dt_current,
+                    hours=hours_per_day,
+                    account_id=account.id,
+                    user_id=user.id
+                )
 
         return res
 
