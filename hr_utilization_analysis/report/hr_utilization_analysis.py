@@ -67,6 +67,7 @@ class HrUtilizationAnalysis(models.TransientModel):
     def _get_entry_values(self, employees, dates):
         Module = self.env["ir.module.module"]
         AccountAnalyticLine = self.env["account.analytic.line"]
+        Task = self.env["project.task"]
 
         project_timesheet_holidays = Module.with_user(SUPERUSER_ID).search(
             [("name", "=", "project_timesheet_holidays"), ("state", "=", "installed")],
@@ -80,6 +81,13 @@ class HrUtilizationAnalysis(models.TransientModel):
                 ("project_id", "!=", False),
                 ("employee_id", "in", employees.ids),
                 ("date", "in", dates),
+            ]
+        )
+        all_tasks = Task.search(
+            [
+                ("user_id", "in", employees.mapped("user_id").ids),
+                ("date_assign", ">=", min(dates)),
+                ("date_assign", "<=", max(dates)),
             ]
         )
         entries = []
@@ -103,6 +111,12 @@ class HrUtilizationAnalysis(models.TransientModel):
                     capacity -= leaves_by_date.get(date, 0)
                 capacity = max(capacity, 0)
 
+                tasks = all_tasks.filtered(
+                    lambda t: t.user_id == employee.user_id
+                    and t.date_assign.date() == date
+                )
+                planned_hours = sum(tasks.mapped("planned_hours"))
+
                 amount = 0.0
                 for line_id in line_ids:
                     amount += line_id.product_uom_id._compute_quantity(
@@ -117,6 +131,8 @@ class HrUtilizationAnalysis(models.TransientModel):
                         "capacity": capacity,
                         "amount": amount,
                         "difference": capacity - amount,
+                        "planned_amount": planned_hours,
+                        "planned_difference": planned_difference - capacity,
                     }
                 )
 
@@ -172,8 +188,10 @@ class HrUtilizationAnalysisEntry(models.TransientModel):
     )
 
     capacity = fields.Float()
-    amount = fields.Float(string="Quantity")
-    difference = fields.Float()
+    amount = fields.Float(string="Real")
+    difference = fields.Float(string="Capacity remaining")
+    planned_amount = fields.Float(string="Planned")
+    planned_difference = fields.Float(string="Still to plan")
 
     _sql_constraints = [
         (
