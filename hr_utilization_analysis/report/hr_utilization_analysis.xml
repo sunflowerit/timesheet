@@ -22,6 +22,9 @@
                         <field name="planned_difference" widget="timesheet_uom" />
                     </group>
                 </group>
+                <group string="Tasks">
+                    <field name="task_ids" nolabel="1" />
+                </group>
                 <group string="Timesheet Lines">
                     <field name="line_ids" nolabel="1" />
                 </group>
