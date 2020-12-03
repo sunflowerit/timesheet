@@ -65,13 +65,7 @@ class HrUtilizationAnalysis(models.TransientModel):
             ]
 
     def _get_entry_values(self, employees, dates):
-        Module = self.env["ir.module.module"]
         AccountAnalyticLine = self.env["account.analytic.line"]
-
-        project_timesheet_holidays = Module.with_user(SUPERUSER_ID).search(
-            [("name", "=", "project_timesheet_holidays"), ("state", "=", "installed")],
-            limit=1,
-        )
 
         uom_hour = self.env.ref("uom.product_uom_hour")
 
@@ -89,19 +83,13 @@ class HrUtilizationAnalysis(models.TransientModel):
             to_datetime = datetime.combine(max(dates), time.max).replace(tzinfo=tz)
             work_time = employee.list_work_time_per_day(from_datetime, to_datetime)
             work_time_by_date = {w[0]: w[1] for w in work_time}
-            if project_timesheet_holidays:
-                leaves = employee.list_leaves(from_datetime, to_datetime)
-                leaves_by_date = {leave[0]: leave[1] for leave in leaves}
 
             for date in dates:
                 line_ids = all_line_ids.filtered(
                     lambda l: l.employee_id == employee and l.date == date
                 )
 
-                capacity = work_time_by_date.get(date, 0)
-                if project_timesheet_holidays:
-                    capacity -= leaves_by_date.get(date, 0)
-                capacity = max(capacity, 0)
+                capacity = max(work_time_by_date.get(date, 0), 0)
 
                 amount = 0.0
                 for line_id in line_ids:
