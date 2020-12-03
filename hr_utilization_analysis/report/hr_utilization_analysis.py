@@ -59,14 +59,19 @@ class HrUtilizationAnalysis(models.TransientModel):
                 dates.append(date)
                 date += one_day
 
-            analysis.entry_ids = [
-                (5, False, False),
-                *[(0, False, d) for d in self._get_entry_values(employee_ids, dates)],
-            ]
+            with self.env.norecompute():
+                analysis.entry_ids = [
+                    (5, False, False),
+                    *[
+                        (0, False, d)
+                        for d in self._get_entry_values(employee_ids, dates)
+                    ],
+                ]
 
     def _get_entry_values(self, employees, dates):
         Module = self.env["ir.module.module"]
         AccountAnalyticLine = self.env["account.analytic.line"]
+        Task = self.env["project.task"]
 
         project_timesheet_holidays = Module.with_user(SUPERUSER_ID).search(
             [("name", "=", "project_timesheet_holidays"), ("state", "=", "installed")],
@@ -75,11 +80,18 @@ class HrUtilizationAnalysis(models.TransientModel):
 
         uom_hour = self.env.ref("uom.product_uom_hour")
 
-        all_line_ids = AccountAnalyticLine.search(
+        all_lines = AccountAnalyticLine.search(
             [
                 ("project_id", "!=", False),
                 ("employee_id", "in", employees.ids),
                 ("date", "in", dates),
+            ]
+        )
+        all_tasks = Task.search(
+            [
+                ("user_id", "in", employees.mapped("user_id").ids),
+                ("date_assign", ">=", min(dates)),
+                ("date_assign", "<=", max(dates)),
             ]
         )
         entries = []
@@ -94,7 +106,7 @@ class HrUtilizationAnalysis(models.TransientModel):
                 leaves_by_date = {leave[0]: leave[1] for leave in leaves}
 
             for date in dates:
-                line_ids = all_line_ids.filtered(
+                lines = all_lines.filtered(
                     lambda l: l.employee_id == employee and l.date == date
                 )
 
@@ -103,20 +115,29 @@ class HrUtilizationAnalysis(models.TransientModel):
                     capacity -= leaves_by_date.get(date, 0)
                 capacity = max(capacity, 0)
 
+                tasks = all_tasks.filtered(
+                    lambda t: t.user_id == employee.user_id
+                    and t.date_assign.date() == date
+                )
+                planned_hours = sum(tasks.mapped("planned_hours"))
+
                 amount = 0.0
-                for line_id in line_ids:
-                    amount += line_id.product_uom_id._compute_quantity(
-                        line_id.unit_amount, uom_hour
+                for line in lines:
+                    amount += line.product_uom_id._compute_quantity(
+                        line.unit_amount, uom_hour
                     )
 
                 entries.append(
                     {
                         "employee_id": employee.id,
                         "date": date,
-                        "line_ids": [(4, _id) for _id in line_ids.ids],
+                        "line_ids": [(4, _id) for _id in lines.ids],
+                        "task_ids": [(4, _id) for _id in tasks.ids],
                         "capacity": capacity,
                         "amount": amount,
                         "difference": capacity - amount,
+                        "planned_amount": planned_hours,
+                        "planned_difference": capacity - planned_hours,
                     }
                 )
 
@@ -143,6 +164,7 @@ class HrUtilizationAnalysis(models.TransientModel):
 class HrUtilizationAnalysisEntry(models.TransientModel):
     _name = "hr.utilization.analysis.entry"
     _description = "HR Utilization Analysis entry"
+    _rec_name = "entry_name"
 
     analysis_id = fields.Many2one(
         string="Analysis",
@@ -150,6 +172,7 @@ class HrUtilizationAnalysisEntry(models.TransientModel):
         required=True,
         ondelete="cascade",
     )
+    entry_name = fields.Char(compute="_compute_entry_name")
     name = fields.Char(related="employee_id.name", store=True)
     employee_id = fields.Many2one(
         string="Employee", comodel_name="hr.employee", required=True,
@@ -170,10 +193,17 @@ class HrUtilizationAnalysisEntry(models.TransientModel):
     line_ids = fields.Many2many(
         string="Timesheet Lines", comodel_name="account.analytic.line",
     )
+    task_ids = fields.Many2many(string="Planned tasks", comodel_name="project.task",)
 
     capacity = fields.Float()
-    amount = fields.Float(string="Quantity")
-    difference = fields.Float()
+    amount = fields.Float(string="Real")
+    difference = fields.Float(string="Capacity remaining")
+    planned_amount = fields.Float(
+        string="Planned", compute="_compute_planned_amount", store=True
+    )
+    planned_difference = fields.Float(
+        string="Still to plan", compute="_compute_planned_amount", store=True
+    )
 
     _sql_constraints = [
         (
@@ -182,3 +212,14 @@ class HrUtilizationAnalysisEntry(models.TransientModel):
             "An analysis entry for employee/date pair has to be unique!",
         ),
     ]
+
+    @api.depends("task_ids.planned_hours")
+    def _compute_planned_amount(self):
+        for entry in self:
+            entry.planned_amount = sum(entry.task_ids.mapped("planned_hours"))
+            entry.planned_difference = entry.capacity - entry.planned_amount
+
+    @api.depends("name", "date")
+    def _compute_entry_name(self):
+        for entry in self:
+            entry.entry_name = "{} {}".format(entry.name, entry.date)
