@@ -24,11 +24,15 @@ class HrUtilizationAnalysis(models.TransientModel):
             leaves = employee.list_leaves(from_datetime, to_datetime)
             data[employee.id] = {leave[0]: leave[1] for leave in leaves}
 
-        for entry in entries:
+        for i, entry in enumerate(entries):
             employee_id = entry["employee_id"]
             date = entry["date"]
-            difference = leaves_by_date.get(employee_id, {}).get(date, 0)
+            difference = data.get(employee_id, {}).get(date, 0)
             if difference:
-                entry["amount"] -= difference
+                print("employee {}: {}: {}".format(employee_id, date, difference))
+                capacity = entry.get("capacity", 0)
+                print("{} to {}".format(capacity, max(capacity - difference, 0)))
+                capacity = max(capacity - difference, 0)
+                entries[i]["capacity"] = capacity
 
         return entries

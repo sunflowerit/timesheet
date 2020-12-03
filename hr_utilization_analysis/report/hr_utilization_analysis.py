@@ -89,7 +89,7 @@ class HrUtilizationAnalysis(models.TransientModel):
                     lambda l: l.employee_id == employee and l.date == date
                 )
 
-                capacity = max(work_time_by_date.get(date, 0), 0)
+                capacity = work_time_by_date.get(date, 0)
 
                 amount = 0.0
                 for line_id in line_ids:
@@ -104,7 +104,6 @@ class HrUtilizationAnalysis(models.TransientModel):
                         "line_ids": [(4, _id) for _id in line_ids.ids],
                         "capacity": capacity,
                         "amount": amount,
-                        "difference": capacity - amount,
                     }
                 )
 
@@ -161,7 +160,7 @@ class HrUtilizationAnalysisEntry(models.TransientModel):
 
     capacity = fields.Float()
     amount = fields.Float(string="Quantity")
-    difference = fields.Float()
+    difference = fields.Float(compute="_compute_difference")
 
     _sql_constraints = [
         (
@@ -170,3 +169,8 @@ class HrUtilizationAnalysisEntry(models.TransientModel):
             "An analysis entry for employee/date pair has to be unique!",
         ),
     ]
+
+    @api.depends("capacity", "amount")
+    def _compute_difference(self):
+        for entry in self:
+            entry.difference = entry.capacity - entry.amount
