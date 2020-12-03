@@ -132,7 +132,7 @@ class HrUtilizationAnalysis(models.TransientModel):
                         "amount": amount,
                         "difference": capacity - amount,
                         "planned_amount": planned_hours,
-                        "planned_difference": planned_difference - capacity,
+                        "planned_difference": capacity - planned_hours,
                     }
                 )
 
